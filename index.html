@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Partage">
+<meta name="theme-color" content="#0b0c10" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f3f7" media="(prefers-color-scheme: light)">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<title>Partage</title>
+<style>
+:root{
+  --bg:#f2f3f7; --bg2:#ffffff; --card:rgba(255,255,255,.82); --line:rgba(60,60,67,.12);
+  --text:#111216; --sub:#6b6f7b; --faint:#a3a7b3;
+  --blue:#2f6bff; --blue2:#5a94ff; --violet:#7c5cff; --green:#22b45f; --orange:#ff9418; --red:#ff3b47; --teal:#16b3c4;
+  --shadow:0 10px 30px rgba(20,30,70,.10), 0 2px 6px rgba(20,30,70,.06);
+  --glass:rgba(255,255,255,.72);
+  --r:18px;
+  --top:env(safe-area-inset-top,0px); --bot:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0b0c10; --bg2:#15161c; --card:rgba(28,29,36,.82); --line:rgba(255,255,255,.08);
+    --text:#f3f4f8; --sub:#9a9eab; --faint:#62666f;
+    --shadow:0 12px 34px rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.3);
+    --glass:rgba(22,23,30,.72);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text)}
+body{font:16px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;-webkit-user-select:none;user-select:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+.glow{position:fixed;inset:-20% -20% auto -20%;height:70vh;pointer-events:none;z-index:0;
+  background:radial-gradient(60% 60% at 20% 20%,rgba(47,107,255,.22),transparent 70%),
+             radial-gradient(50% 50% at 90% 10%,rgba(124,92,255,.16),transparent 70%);
+  transition:background .6s}
+#app{position:relative;z-index:1;min-height:100%;padding:calc(var(--top) + 8px) 16px calc(var(--bot) + 110px)}
+.view{animation:viewIn .45s cubic-bezier(.2,.9,.25,1) both}
+.view.back{animation:viewBack .4s cubic-bezier(.2,.9,.25,1) both}
+@keyframes viewIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes viewBack{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 currentColor}100%{box-shadow:0 0 0 8px transparent}}
+
+/* barre du haut */
+.top{display:flex;align-items:center;gap:10px;min-height:44px;margin-bottom:6px}
+.top .sp{flex:1}
+.iconbtn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--card);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:var(--shadow);transition:transform .18s}
+.iconbtn:active{transform:scale(.88)}
+.iconbtn svg{width:19px;height:19px}
+.backbtn{display:flex;align-items:center;gap:2px;color:var(--blue);font-weight:500;font-size:17px;padding:6px 4px;transition:opacity .15s}
+.backbtn:active{opacity:.5}
+.backbtn svg{width:22px;height:22px}
+h1{font-size:34px;font-weight:800;letter-spacing:-.6px;margin:6px 2px 14px}
+.hero{display:flex;align-items:center;gap:16px;margin:4px 2px 16px;animation:rise .5s both}
+.hero .glyph{width:64px;height:64px;flex:none;animation:float 3.2s ease-in-out infinite}
+.hero h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.4px;word-break:break-word}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 9px;border-radius:99px;
+  background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c);animation:pop .4s both}
+.chip i{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.chip i.live{animation:pulse 1.4s infinite}
+
+/* cartes partages */
+.cards{display:grid;gap:12px}
+.card{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--r);background:var(--card);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:var(--shadow);
+  transition:transform .2s cubic-bezier(.2,.9,.25,1);animation:rise .5s both;text-align:left;width:100%}
+.card:active{transform:scale(.97)}
+.card .glyph{width:46px;height:46px;flex:none}
+.card .t{font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .s{font-size:13px;color:var(--sub);margin-top:2px}
+.card .grow{flex:1;min-width:0}
+.chev{color:var(--faint);width:18px;height:18px;flex:none}
+
+.empty{text-align:center;padding:40px 10px 20px;animation:rise .6s both}
+.empty .glyph{width:110px;height:110px;margin:0 auto 18px;animation:float 3s ease-in-out infinite}
+.empty h2{font-size:24px;margin:0 0 8px;font-weight:800}
+.empty p{color:var(--sub);margin:0 auto 22px;max-width:300px}
+.primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 22px;border-radius:99px;
+  color:#fff;font-weight:700;background:linear-gradient(135deg,var(--blue2),var(--blue) 55%,var(--violet));
+  box-shadow:0 10px 24px rgba(47,107,255,.35);transition:transform .18s, box-shadow .18s;position:relative;overflow:hidden}
+.primary:active{transform:scale(.95)}
+.primary::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);
+  transform:translateX(-120%);animation:shine 3.2s 1s infinite}
+@keyframes shine{0%{transform:translateX(-120%)}40%,100%{transform:translateX(120%)}}
+.primary[disabled]{opacity:.45;box-shadow:none}
+.primary.wide{width:100%}
+.ghost{padding:12px 18px;border-radius:99px;background:var(--card);font-weight:600;box-shadow:var(--shadow)}
+
+/* fil d'Ariane */
+.crumbs{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 12px;scrollbar-width:none}
+.crumbs::-webkit-scrollbar{display:none}
+.crumb{flex:none;font-size:13px;font-weight:600;padding:6px 11px;border-radius:99px;background:var(--card);color:var(--sub);box-shadow:var(--shadow)}
+.crumb.on{color:#fff;background:var(--blue)}
+
+/* liste de fichiers */
+.list{border-radius:var(--r);background:var(--card);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  box-shadow:var(--shadow);overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:11px 12px 11px 14px;position:relative;animation:rise .42s both;width:100%;text-align:left}
+.row+.row::before{content:"";position:absolute;left:62px;right:0;top:0;height:1px;background:var(--line)}
+.row:active{background:var(--line)}
+.row .ic{width:36px;height:36px;flex:none;border-radius:10px;display:grid;place-items:center}
+.row .ic svg{width:20px;height:20px}
+.row .grow{flex:1;min-width:0}
+.row .n{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .m{font-size:12px;color:var(--sub);margin-top:1px}
+.row .more{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;color:var(--sub);flex:none}
+.row .more:active{background:var(--line)}
+.row .more svg{width:20px;height:20px}
+.row.playing .n{color:var(--blue)}
+.eq{display:inline-flex;gap:2px;align-items:flex-end;height:12px;margin-left:6px;vertical-align:middle}
+.eq b{width:3px;background:var(--blue);border-radius:2px;animation:eq .9s ease-in-out infinite}
+.eq b:nth-child(2){animation-delay:.2s}.eq b:nth-child(3){animation-delay:.4s}
+.paused .eq b{animation-play-state:paused}
+@keyframes eq{0%,100%{height:3px}50%{height:12px}}
+.hint{text-align:center;color:var(--sub);font-size:13px;padding:26px 16px}
+.spinner{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--blue);animation:spin .8s linear infinite;margin:30px auto}
+.bar{height:3px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue2),var(--violet));transition:width .2s}
+
+/* bouton flottant */
+.fab{position:fixed;right:18px;bottom:calc(var(--bot) + 22px);z-index:5;width:58px;height:58px;border-radius:50%;
+  color:#fff;display:grid;place-items:center;background:linear-gradient(135deg,var(--blue2),var(--blue) 55%,var(--violet));
+  box-shadow:0 12px 26px rgba(47,107,255,.42);transition:transform .25s cubic-bezier(.2,.9,.25,1), bottom .35s cubic-bezier(.2,.9,.25,1);animation:pop .5s both}
+.fab:active{transform:scale(.9) rotate(90deg)}
+.fab svg{width:26px;height:26px}
+body.has-player .fab{bottom:calc(var(--bot) + 104px)}
+.fab[hidden]{display:none}
+
+/* lecteur */
+.player{position:fixed;left:10px;right:10px;bottom:calc(var(--bot) + 10px);z-index:6;border-radius:22px;padding:12px 14px 14px;
+  background:var(--glass);backdrop-filter:blur(30px) saturate(1.6);-webkit-backdrop-filter:blur(30px) saturate(1.6);
+  box-shadow:0 18px 40px rgba(0,0,0,.25);transform:translateY(140%);opacity:0;transition:transform .45s cubic-bezier(.2,.9,.25,1), opacity .3s}
+body.has-player .player{transform:none;opacity:1}
+.player .line1{display:flex;align-items:center;gap:12px}
+.player .art{width:42px;height:42px;border-radius:11px;flex:none;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(135deg,var(--blue2),var(--violet))}
+.player .art svg{width:22px;height:22px}
+.player .title{flex:1;min-width:0;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player .time{font-size:11px;color:var(--sub);font-variant-numeric:tabular-nums}
+.player .pp{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--text);color:var(--bg);transition:transform .15s}
+.player .pp:active{transform:scale(.88)}
+.player .pp svg{width:20px;height:20px}
+.player .x{width:30px;height:30px;display:grid;place-items:center;color:var(--sub)}
+.player .x svg{width:16px;height:16px}
+.seek{position:relative;height:22px;margin-top:6px;touch-action:none}
+.seek .track{position:absolute;left:0;right:0;top:9px;height:4px;border-radius:4px;background:var(--line)}
+.seek .fill{position:absolute;left:0;top:9px;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--blue2),var(--violet));width:0}
+.seek .knob{position:absolute;top:4px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35);left:0}
+
+/* feuilles */
+.scrim{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .3s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--bg2);border-radius:26px 26px 0 0;
+  padding:10px 18px calc(var(--bot) + 18px);transform:translateY(105%);transition:transform .42s cubic-bezier(.2,.9,.25,1);
+  max-height:88vh;overflow:auto;box-shadow:0 -10px 40px rgba(0,0,0,.2)}
+.sheet.on{transform:none}
+.grab{width:38px;height:5px;border-radius:5px;background:var(--line);margin:0 auto 14px}
+.sheet h3{margin:4px 0 6px;font-size:21px;font-weight:800;text-align:center}
+.sheet p.sub{margin:0 0 16px;color:var(--sub);text-align:center;font-size:14px}
+.field{width:100%;border:0;outline:0;border-radius:14px;background:var(--bg);padding:14px;font-size:14px;resize:none;
+  font-family:ui-monospace,Menlo,monospace;-webkit-user-select:text;user-select:text;border:2px solid transparent;transition:border-color .2s}
+.field.ok{border-color:var(--green)} .field.bad{border-color:var(--red);animation:shake .4s}
+input.field{font-family:inherit;font-size:16px}
+@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.preview{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;margin-top:10px;
+  background:color-mix(in srgb,var(--green) 12%,transparent);animation:rise .3s both}
+.preview .glyph{width:36px;height:36px;flex:none}
+.stack{display:grid;gap:10px;margin-top:14px}
+.actions{display:grid;gap:8px}
+.act{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--bg);font-weight:600;text-align:left;width:100%;transition:transform .15s}
+.act:active{transform:scale(.98)}
+.act svg{width:20px;height:20px;color:var(--blue)}
+.act.danger,.act.danger svg{color:var(--red)}
+.sheet .fname{font-size:13px;color:var(--sub);text-align:center;margin:-2px 0 14px;word-break:break-all}
+
+/* aperçu image / vidéo */
+.viewer{position:fixed;inset:0;z-index:30;background:#000;display:none;align-items:center;justify-content:center;flex-direction:column}
+.viewer.on{display:flex;animation:rise .3s both}
+.viewer img,.viewer video{max-width:100%;max-height:82vh}
+.viewer .vx{position:absolute;top:calc(var(--top) + 12px);right:14px;width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,.18);color:#fff;display:grid;place-items:center}
+.viewer .vx svg{width:16px;height:16px}
+
+/* toasts */
+.toast{position:fixed;left:50%;top:calc(var(--top) + 10px);z-index:40;transform:translate(-50%,-160%);
+  background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);color:var(--text);
+  padding:11px 18px;border-radius:99px;font-weight:600;font-size:14px;box-shadow:var(--shadow);
+  transition:transform .4s cubic-bezier(.2,.9,.25,1);max-width:calc(100% - 32px);text-align:center}
+.toast.on{transform:translate(-50%,0)}
+
+/* transferts */
+.transfers{position:fixed;left:12px;right:12px;top:calc(var(--top) + 8px);z-index:15;display:grid;gap:8px;pointer-events:none}
+.tf{background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-radius:16px;padding:10px 14px;
+  box-shadow:var(--shadow);font-size:13px;font-weight:600;animation:rise .3s both}
+.tf .bar{margin-top:7px}
+.offline{border-radius:var(--r);padding:22px;text-align:center;background:var(--card);box-shadow:var(--shadow);animation:rise .4s both}
+.offline .big{font-size:40px;margin-bottom:8px}
+.offline p{color:var(--sub);margin:6px 0 16px}
+.foot{text-align:center;color:var(--faint);font-size:12px;margin-top:26px}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div id="app"></div>
+<div class="transfers" id="transfers"></div>
+
+<button class="fab" id="fab" hidden aria-label="Ajouter"></button>
+
+<div class="player" id="player">
+  <div class="line1">
+    <div class="art" id="pArt"></div>
+    <div style="flex:1;min-width:0">
+      <div class="title" id="pTitle">—</div>
+      <div class="time" id="pTime">0:00 / 0:00</div>
+    </div>
+    <button class="pp" id="pPlay" aria-label="Lecture"></button>
+    <button class="x" id="pClose" aria-label="Fermer"></button>
+  </div>
+  <div class="seek" id="seek"><div class="track"></div><div class="fill" id="pFill"></div><div class="knob" id="pKnob"></div></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"><div class="grab"></div><div id="sheetBody"></div></div>
+
+<div class="viewer" id="viewer"><button class="vx" id="vClose" aria-label="Fermer"></button><div id="vBody"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="picker" multiple hidden>
+<audio id="audio" preload="auto" playsinline></audio>
+
+<script>
+"use strict";
+/* ───────── Icônes ───────── */
+const I = {
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  chev:'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 10-2.3 5.7"/><path d="M20 4v7h-7"/></svg>',
+  more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+  folder:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6.5A2.5 2.5 0 015.5 4h3.6c.6 0 1.2.3 1.6.7L12 6h6.5A2.5 2.5 0 0121 8.5v9a2.5 2.5 0 01-2.5 2.5h-13A2.5 2.5 0 013 17.5z"/></svg>',
+  audio:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 17.5V6.6a1 1 0 01.8-1l8-1.6a1 1 0 011.2 1V15.5a2.5 2.5 0 11-2-2.45V7.2l-6 1.2v9.1a2.5 2.5 0 11-2-2.45z"/></svg>',
+  video:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 7.5A2.5 2.5 0 015.5 5h8A2.5 2.5 0 0116 7.5v9a2.5 2.5 0 01-2.5 2.5h-8A2.5 2.5 0 013 16.5zM17 10l3.4-2.3a1 1 0 011.6.8v7a1 1 0 01-1.6.8L17 14z"/></svg>',
+  image:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2zm3.5 5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM5 18h14l-4.5-6-3.5 4.5-2.5-3z"/></svg>',
+  box:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l9 4.5v11L12 22l-9-4.5v-11zm0 2.2L6 7.2l6 3 6-3zM5 8.8v7.5l6 3v-7.5zm8 10.5l6-3V8.8l-6 3z"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h8l6 6v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zm7 1.5V9h5.5zM8 13h8v1.6H8zm0 3.4h8V18H8z"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 001.5.86l12.4-7.5a1 1 0 000-1.72L8.5 3.64A1 1 0 007 4.5z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4.2" height="16" rx="1.2"/><rect x="13.8" y="4" width="4.2" height="16" rx="1.2"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  save:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>',
+  newfolder:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M12 10v6M9 13h6"/></svg>',
+  open:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z" fill="currentColor"/></svg>',
+  remove:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/><circle cx="12" cy="12" r="9"/></svg>',
+};
+const TINTS = ['#3a8cff','#8c5cf5','#ff548c','#ff9418','#33c773','#1fbfd9','#8c8f99'];
+function folderGlyph(color, shared){
+  const id = 'g' + Math.random().toString(36).slice(2,8);
+  return `<svg class="glyph" viewBox="0 0 64 64"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="${color}" stop-opacity=".78"/><stop offset="1" stop-color="${color}"/></linearGradient></defs>
+    <path d="M6 15a5 5 0 015-5h12.5c1.4 0 2.6.6 3.5 1.6L30 15h23a5 5 0 015 5v29a5 5 0 01-5 5H11a5 5 0 01-5-5z" fill="url(#${id})"/>
+    <path d="M6 22h52v27a5 5 0 01-5 5H11a5 5 0 01-5-5z" fill="#fff" opacity=".18"/>
+    ${shared?`<circle cx="50" cy="48" r="10" fill="#fff"/><g fill="${color}"><circle cx="47" cy="45.5" r="2.4"/><circle cx="53.3" cy="45.5" r="2.4"/><path d="M42.6 52.5c.4-2.6 2.2-4 4.4-4s4 1.4 4.4 4zM49.6 52.5c.3-2.4 1.8-4 3.7-4 2 0 3.5 1.4 3.9 4z"/></g>`:''}
+  </svg>`;
+}
+
+/* ───────── Utilitaires ───────── */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d }catch(e){ return d } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)) }catch(e){} }
+};
+function fmtSize(n){
+  if(!n) return '0 o';
+  const u=['o','Ko','Mo','Go','To']; let i=0; while(n>=1000 && i<u.length-1){ n/=1000; i++ }
+  return (i===0? n : n.toFixed(n<10?1:0)).toString().replace('.',',') + ' ' + u[i];
+}
+function fmtTime(s){ if(!isFinite(s)) return '0:00'; s=Math.floor(s); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0') }
+const rtf = (()=>{ try{ return new Intl.RelativeTimeFormat('fr',{numeric:'auto'}) }catch(e){ return null } })();
+function rel(date){
+  if(!rtf) return date.toLocaleDateString('fr-FR');
+  const s=(date-Date.now())/1000, a=Math.abs(s);
+  if(a<3600) return rtf.format(Math.round(s/60),'minute');
+  if(a<86400) return rtf.format(Math.round(s/3600),'hour');
+  if(a<86400*30) return rtf.format(Math.round(s/86400),'day');
+  return rtf.format(Math.round(s/(86400*30)),'month');
+}
+const EXT = {
+  audio:{mp3:'audio/mpeg',wav:'audio/wav',m4a:'audio/mp4',aac:'audio/aac',aif:'audio/aiff',aiff:'audio/aiff',flac:'audio/flac',ogg:'audio/ogg',caf:'audio/x-caf'},
+  video:{mp4:'video/mp4',mov:'video/quicktime',m4v:'video/x-m4v'},
+  image:{jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',heic:'image/heic',webp:'image/webp'},
+  box:{dmg:'application/x-apple-diskimage',zip:'application/zip',pkg:'application/octet-stream',rar:'application/vnd.rar','7z':'application/x-7z-compressed'},
+};
+function kindOf(name){
+  const e = (name.split('.').pop()||'').toLowerCase();
+  for(const k in EXT) if(EXT[k][e]) return {kind:k, mime:EXT[k][e]};
+  if(e==='pdf') return {kind:'doc', mime:'application/pdf'};
+  return {kind:'doc', mime:'application/octet-stream'};
+}
+const KCOL = {folder:'#3a8cff', audio:'#ff548c', video:'#8c5cf5', image:'#33c773', box:'#ff9418', doc:'#8c8f99'};
+const ROLES = {
+  read:{label:'Lecture seule', c:'var(--teal)'},
+  add:{label:'Peut ajouter', c:'var(--orange)'},
+  edit:{label:'Peut modifier', c:'var(--violet)'},
+};
+const canAdd = r => r==='add' || r==='edit';
+const canDelete = r => r==='edit';
+
+let toastTimer;
+function toast(t){
+  const el=$('#toast'); el.textContent=t; el.classList.add('on');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('on'),2600);
+}
+function haptic(){ try{ navigator.vibrate && navigator.vibrate(8) }catch(e){} }
+
+/* ───────── Liens d'invitation (même format que l'app Mac) ───────── */
+function decodeInvite(raw){
+  let s = String(raw||'').trim();
+  const i = s.indexOf('d='); if(i>=0) s = s.slice(i+2);
+  const a = s.indexOf('&'); if(a>=0) s = s.slice(0,a);
+  s = s.replace(/\s/g,'').replace(/-/g,'+').replace(/_/g,'/');
+  while(s.length%4) s+='=';
+  try{
+    const bin = atob(s);
+    const bytes = Uint8Array.from(bin, c=>c.charCodeAt(0));
+    const o = JSON.parse(new TextDecoder().decode(bytes));
+    if(!o || !o.t || !o.k) return null;
+    return {t:String(o.t), k:String(o.k), u:o.u?String(o.u):null, n:String(o.n||'Partage'), o:String(o.o||'Mac')};
+  }catch(e){ return null }
+}
+
+/* ───────── Partages enregistrés ───────── */
+let shares = store.get('partage.shares', []);
+function saveShares(){ store.set('partage.shares', shares) }
+function shareByKey(k){ return shares.find(s=>s.k===k) }
+
+/* ───────── Réseau : trouver le Mac et lui parler ───────── */
+class HTTPErr extends Error{ constructor(code, body){ super('HTTP '+code); this.code=code; this.body=body } }
+class Offline extends Error{}
+const BADGW = [502,503,504,520,521,522,523,524,530];
+
+async function lookupBase(topic){
+  try{
+    const r = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}/json?poll=1&since=12h`, {cache:'no-store'});
+    if(!r.ok) return null;
+    const text = await r.text(); let last = null;
+    for(const line of text.split('\n')){
+      if(!line.trim()) continue;
+      try{ const o = JSON.parse(line); if(o.event==='message' && o.message){ const inner = JSON.parse(o.message); if(inner.u) last = inner.u } }catch(e){}
+    }
+    return last;
+  }catch(e){ return null }
+}
+function buildURL(base, path, query){
+  let u = base.replace(/\/+$/,'') + path;
+  const q = Object.entries(query||{}).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+  return q ? u+'?'+q : u;
+}
+/** Envoie une requête au Mac ; si l'adresse a changé, la redemande à l'annuaire et réessaie. */
+async function call(share, path, {method='GET', query, body, raw=false} = {}){
+  for(let attempt=0; attempt<2; attempt++){
+    if(attempt===1 || !share.u){
+      const b = await lookupBase(share.t);
+      if(!b){ if(attempt===1) break; else continue }
+      if(b!==share.u){ share.u = b; saveShares() }
+    }
+    let r;
+    try{
+      const headers = {'X-Partage-Token': share.k};
+      if(body) headers['Content-Type'] = 'application/octet-stream';
+      r = await fetch(buildURL(share.u, path, query), {method, headers, body, cache:'no-store'});
+    }catch(e){ continue }
+    if(BADGW.includes(r.status)) continue;
+    if(raw) return r;
+    let data = null; try{ data = await r.json() }catch(e){}
+    if(!r.ok) throw new HTTPErr(r.status, data);
+    return data;
+  }
+  throw new Offline();
+}
+function errText(e, share){
+  if(e instanceof Offline) return `Le Mac de ${share.o} est hors ligne (ou l'app Partage est fermée).`;
+  if(e instanceof HTTPErr){
+    if(e.code===401) return "Ce lien n'est plus reconnu : l'accès a été supprimé.";
+    if(e.code===410) return (e.body && e.body.error==='revoked') ? "L'hôte a coupé ton accès." : 'Ce lien a expiré.';
+    if(e.code===403) return "Tu n'as pas le droit de faire ça sur ce partage.";
+    if(e.code===404) return 'Introuvable (le dossier a peut-être été déplacé).';
+    if(e.code===409) return 'Un fichier porte déjà ce nom.';
+  }
+  return 'Erreur réseau. Réessaie.';
+}
+
+/* téléchargement avec progression */
+async function fetchFile(share, entry, onProgress){
+  const r = await call(share, '/api/file', {query:{p:entry.p}, raw:true});
+  if(!r.ok){ let d=null; try{ d=await r.json() }catch(e){}; throw new HTTPErr(r.status, d) }
+  const total = Number(r.headers.get('Content-Length')) || entry.s || 0;
+  const {mime} = kindOf(entry.p);
+  if(!r.body || !r.body.getReader){ const b = await r.blob(); return new Blob([b],{type:mime}) }
+  const reader = r.body.getReader(); const parts=[]; let got=0;
+  for(;;){ const {done, value} = await reader.read(); if(done) break; parts.push(value); got+=value.length; onProgress && total && onProgress(got/total) }
+  return new Blob(parts, {type:mime});
+}
+
+/* ───────── État ───────── */
+let cur = null;        // {share, hello, entries, dir}
+let loading = false;
+const blobCache = new Map(); // clé p|m → Blob
+function cacheBlob(key, blob){
+  blobCache.set(key, blob);
+  while(blobCache.size>4){ const k = blobCache.keys().next().value; blobCache.delete(k) }
+}
+
+/* ───────── Transferts (barre en haut) ───────── */
+function transfer(label){
+  const el = document.createElement('div'); el.className='tf';
+  el.innerHTML = `<div>${esc(label)}</div><div class="bar"><i></i></div>`;
+  $('#transfers').appendChild(el);
+  return {
+    set(p){ el.querySelector('i').style.width = Math.round(Math.min(1,p)*100)+'%' },
+    done(){ el.style.transition='opacity .3s, transform .3s'; el.style.opacity='0'; el.style.transform='translateY(-10px)'; setTimeout(()=>el.remove(),320) }
+  };
+}
+
+/* ───────── Vues ───────── */
+const app = $('#app');
+function render(html, back){ app.innerHTML = `<div class="view${back?' back':''}">${html}</div>`; window.scrollTo(0,0) }
+
+function viewHome(back){
+  cur = null; setFab(null);
+  document.querySelector('.glow').style.background='';
+  if(!shares.length){
+    render(`
+      <div class="empty">
+        ${folderGlyph('#3a8cff', true).replace('class="glyph"','class="glyph" style="width:110px;height:110px"')}
+        <h2>Partage</h2>
+        <p>Colle un lien d'invitation créé depuis Partage sur un Mac pour ouvrir le dossier ici.</p>
+        <button class="primary" id="addBtn">${I.link.replace('<svg','<svg width="18" height="18"')} Ajouter un partage</button>
+      </div>
+      <div class="foot">@clideurbeats</div>`, back);
+    $('#addBtn').onclick = sheetJoin;
+    return;
+  }
+  render(`
+    <div class="top"><div class="sp"></div>
+      <button class="iconbtn" id="addBtn" aria-label="Ajouter">${I.plus}</button></div>
+    <h1>Partage</h1>
+    <div class="cards">${shares.map((s,i)=>`
+      <button class="card" data-k="${esc(s.k)}" style="animation-delay:${i*45}ms">
+        ${folderGlyph(TINTS[i%TINTS.length], true)}
+        <div class="grow"><div class="t">${esc(s.n)}</div><div class="s">De ${esc(s.o)}</div></div>
+        ${I.chev}
+      </button>`).join('')}
+    </div>
+    <div class="foot">Ton Mac doit être allumé avec Partage ouvert · @clideurbeats</div>`, back);
+  $('#addBtn').onclick = sheetJoin;
+  app.querySelectorAll('.card').forEach(b => b.onclick = () => { haptic(); openShare(shareByKey(b.dataset.k)) });
+}
+
+async function openShare(share, dir=''){
+  const idx = shares.indexOf(share);
+  const tint = TINTS[(idx<0?0:idx)%TINTS.length];
+  cur = {share, hello:null, entries:[], dir, tint};
+  document.querySelector('.glow').style.background =
+    `radial-gradient(60% 60% at 20% 20%, ${tint}38, transparent 70%), radial-gradient(50% 50% at 90% 10%, ${tint}22, transparent 70%)`;
+  renderShare();
+  await refresh();
+}
+
+async function refresh(){
+  if(!cur || loading) return;
+  loading = true;
+  const share = cur.share;
+  try{
+    const hello = await call(share, '/api/hello');
+    const man = await call(share, '/api/manifest');
+    if(!cur || cur.share!==share) return;
+    cur.hello = hello; cur.entries = (man && man.entries) || []; cur.error = null;
+    if(hello.name && hello.name!==share.n){ share.n = hello.name; saveShares() }
+    if(hello.owner && hello.owner!==share.o){ share.o = hello.owner; saveShares() }
+  }catch(e){
+    if(cur && cur.share===share) cur.error = e;
+  }finally{
+    loading = false;
+    if(cur && cur.share===share) renderShare(false, true);
+  }
+}
+
+function children(dir){
+  const pre = dir ? dir + '/' : '';
+  const out = [];
+  for(const e of cur.entries){
+    if(!e.p.startsWith(pre)) continue;
+    const rest = e.p.slice(pre.length);
+    if(!rest || rest.includes('/')) continue;
+    out.push(e);
+  }
+  out.sort((a,b)=> (a.d!==b.d) ? (a.d?-1:1) : a.p.localeCompare(b.p,'fr',{numeric:true,sensitivity:'base'}));
+  return out;
+}
+const baseName = p => p.split('/').pop();
+
+function renderShare(back, quiet){
+  const {share, hello, dir, error, tint} = cur;
+  const role = hello ? hello.role : null;
+  const status = error ? {t:'Hors ligne', c:'var(--orange)'} : hello ? {t:'En ligne', c:'var(--green)', live:true} : {t:'Connexion…', c:'var(--blue)', live:true};
+  const chips = [
+    `<span class="chip" style="--c:var(--blue)">De ${esc(share.o)}</span>`,
+    role ? `<span class="chip" style="--c:${ROLES[role].c}">${ROLES[role].label}</span>` : '',
+    `<span class="chip" style="--c:${status.c}"><i class="${status.live?'live':''}"></i>${status.t}</span>`,
+    hello && hello.expiry ? `<span class="chip" style="--c:${(hello.expiry*1000-Date.now())<86400000?'var(--orange)':'var(--sub)'}">Expire ${esc(rel(new Date(hello.expiry*1000)))}</span>` : ''
+  ].join('');
+  const parts = dir ? dir.split('/') : [];
+  const crumbs = parts.length ? `<div class="crumbs">
+      <button class="crumb" data-d="">${esc(share.n)}</button>
+      ${parts.map((p,i)=>`<button class="crumb${i===parts.length-1?' on':''}" data-d="${esc(parts.slice(0,i+1).join('/'))}">${esc(p)}</button>`).join('')}
+    </div>` : '';
+  let body;
+  if(error && !hello){
+    const offline = error instanceof Offline;
+    body = `<div class="offline"><div class="big">${offline?'🌙':'⛔️'}</div><b>${offline?'Mac hors ligne':'Accès impossible'}</b>
+      <p>${esc(errText(error, share))}</p><button class="ghost" id="retry">Réessayer</button></div>`;
+  }else if(!hello){
+    body = '<div class="spinner"></div>';
+  }else{
+    const items = children(dir);
+    if(!items.length){
+      body = `<div class="hint">${canAdd(role)?'Ce dossier est vide. Touche + pour y déposer des fichiers.':'Ce dossier est vide.'}</div>`;
+    }else{
+      body = `<div class="list">${items.map((e,i)=>{
+        const name = baseName(e.p);
+        const k = e.d ? 'folder' : kindOf(name).kind;
+        const playing = audioState.path===e.p && audioState.share===share.k;
+        const nKids = e.d ? children(e.p).length : 0;
+        const meta = e.d ? (nKids ? `${nKids} élément${nKids>1?'s':''}` : 'Vide') : fmtSize(e.s) + (e.m ? ' · ' + new Date(e.m).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) : '');
+        return `<div class="row${playing?' playing':''}${playing&&$('#audio').paused?' paused':''}" data-p="${esc(e.p)}" style="animation-delay:${Math.min(i*25,400)}ms">
+          <div class="ic" style="background:${KCOL[k]}22;color:${KCOL[k]}">${I[k]}</div>
+          <div class="grow"><div class="n">${esc(name)}${playing?'<span class="eq"><b></b><b></b><b></b></span>':''}</div><div class="m">${meta}</div></div>
+          ${e.d ? I.chev : `<button class="more" aria-label="Options">${I.more}</button>`}
+        </div>`}).join('')}</div>`;
+    }
+  }
+  const html = `
+    <div class="top">
+      <button class="backbtn" id="back">${I.back}${dir ? '' : 'Partages'}</button>
+      <div class="sp"></div>
+      <button class="iconbtn" id="reload" aria-label="Actualiser">${I.refresh}</button>
+      <button class="iconbtn" id="opts" aria-label="Options">${I.more}</button>
+    </div>
+    <div class="hero">${folderGlyph(tint, true)}
+      <div style="min-width:0"><h2>${esc(dir ? parts[parts.length-1] : share.n)}</h2><div class="chips">${chips}</div></div>
+    </div>
+    ${crumbs}
+    ${body}`;
+  if(quiet){ const v = app.querySelector('.view'); if(v){ v.innerHTML = html; v.style.animation='none' } else render(html, back) }
+  else render(html, back);
+
+  $('#back').onclick = () => { haptic(); if(cur.dir){ const p=cur.dir.split('/'); p.pop(); cur.dir=p.join('/'); renderShare(true) } else viewHome(true) };
+  $('#reload').onclick = () => { haptic(); const b=$('#reload svg'); b.style.transition='transform .6s'; b.style.transform='rotate(360deg)'; refresh() };
+  $('#opts').onclick = () => { haptic(); sheetShare() };
+  const rt = $('#retry'); if(rt) rt.onclick = () => { cur.error=null; renderShare(); refresh() };
+  app.querySelectorAll('.crumb').forEach(c => c.onclick = () => { cur.dir = c.dataset.d; renderShare(true) });
+  app.querySelectorAll('.row').forEach(row => {
+    const e = cur.entries.find(x=>x.p===row.dataset.p);
+    row.onclick = ev => {
+      if(ev.target.closest('.more')){ ev.stopPropagation(); sheetFile(e); return }
+      haptic(); openEntry(e);
+    };
+  });
+  setFab(hello && canAdd(role) ? 'add' : null);
+}
+
+function setFab(mode){
+  const f = $('#fab');
+  if(!mode){ f.hidden = true; return }
+  f.hidden = false; f.innerHTML = I.plus; f.onclick = () => { haptic(); sheetAdd() };
+}
+
+/* ───────── Ouvrir un élément ───────── */
+async function getBlob(e, label){
+  const key = cur.share.k+'|'+e.p+'|'+e.m;
+  if(blobCache.has(key)) return blobCache.get(key);
+  const t = transfer(label + ' ' + baseName(e.p));
+  try{
+    const b = await fetchFile(cur.share, e, p=>t.set(p));
+    cacheBlob(key, b); return b;
+  }finally{ t.done() }
+}
+async function openEntry(e){
+  if(e.d){ cur.dir = e.p; renderShare(); return }
+  const {kind} = kindOf(e.p);
+  try{
+    if(kind==='audio') return playAudio(e);
+    if(kind==='image' || kind==='video'){
+      const b = await getBlob(e, 'Ouverture de'); showViewer(kind, URL.createObjectURL(b)); return;
+    }
+    sheetFile(e);
+  }catch(err){ toast(errText(err, cur.share)) }
+}
+function showViewer(kind, url){
+  const v = $('#viewer');
+  $('#vBody').innerHTML = kind==='image' ? `<img src="${url}" alt="">` : `<video src="${url}" controls autoplay playsinline></video>`;
+  v.classList.add('on');
+}
+$('#vClose').innerHTML = I.x;
+$('#vClose').onclick = () => { const v=$('#viewer'); const m=v.querySelector('video'); if(m) m.pause(); v.classList.remove('on'); $('#vBody').innerHTML='' };
+
+async function saveEntry(e){
+  try{
+    const b = await getBlob(e, 'Téléchargement de');
+    const name = baseName(e.p);
+    const file = new File([b], name, {type:b.type || 'application/octet-stream'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], title:name}) }catch(err){ if(err && err.name!=='AbortError') throw err }
+    }else{
+      const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name;
+      document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove() }, 4000);
+    }
+  }catch(err){ toast(errText(err, cur.share)) }
+}
+
+/* ───────── Lecteur audio ───────── */
+const audio = $('#audio');
+const audioState = {path:null, share:null, url:null};
+$('#pPlay').innerHTML = I.play; $('#pClose').innerHTML = I.x; $('#pArt').innerHTML = I.audio;
+async function playAudio(e){
+  if(audioState.path===e.p && audioState.share===cur.share.k){ audio.paused ? audio.play() : audio.pause(); return }
+  const b = await getBlob(e, 'Chargement de');
+  if(audioState.url) URL.revokeObjectURL(audioState.url);
+  audioState.url = URL.createObjectURL(b); audioState.path = e.p; audioState.share = cur.share.k;
+  audio.src = audioState.url;
+  $('#pTitle').textContent = baseName(e.p).replace(/\.[^.]+$/,'');
+  document.body.classList.add('has-player');
+  try{ await audio.play() }catch(err){}
+  if('mediaSession' in navigator){
+    try{ navigator.mediaSession.metadata = new MediaMetadata({title:$('#pTitle').textContent, artist:cur.share.n, artwork:[{src:'icon-512.png',sizes:'512x512',type:'image/png'}]}) }catch(err){}
+  }
+  renderShare(false, true);
+}
+function syncPlayer(){
+  $('#pPlay').innerHTML = audio.paused ? I.play : I.pause;
+  const d = audio.duration || 0, t = audio.currentTime || 0, p = d ? t/d : 0;
+  $('#pFill').style.width = (p*100)+'%'; $('#pKnob').style.left = (p*100)+'%';
+  $('#pTime').textContent = fmtTime(t) + ' / ' + fmtTime(d);
+  document.querySelectorAll('.row.playing').forEach(r=>r.classList.toggle('paused', audio.paused));
+}
+['timeupdate','play','pause','loadedmetadata','ended'].forEach(ev => audio.addEventListener(ev, syncPlayer));
+$('#pPlay').onclick = () => { haptic(); audio.paused ? audio.play() : audio.pause() };
+$('#pClose').onclick = () => {
+  audio.pause(); document.body.classList.remove('has-player');
+  if(audioState.url) URL.revokeObjectURL(audioState.url);
+  audioState.path = audioState.share = audioState.url = null; audio.removeAttribute('src');
+  if(cur && cur.hello) renderShare(false, true);
+};
+(function seekable(){
+  const s = $('#seek');
+  const go = ev => { const r = s.getBoundingClientRect(); const x = (ev.touches?ev.touches[0].clientX:ev.clientX) - r.left;
+    if(audio.duration) audio.currentTime = Math.max(0, Math.min(1, x/r.width)) * audio.duration };
+  let drag = false;
+  s.addEventListener('pointerdown', ev => { drag = true; s.setPointerCapture(ev.pointerId); go(ev) });
+  s.addEventListener('pointermove', ev => { if(drag) go(ev) });
+  s.addEventListener('pointerup', () => drag = false);
+})();
+
+/* ───────── Feuilles ───────── */
+function openSheet(html){
+  $('#sheetBody').innerHTML = html;
+  $('#scrim').classList.add('on'); $('#sheet').classList.add('on');
+}
+function closeSheet(){ $('#scrim').classList.remove('on'); $('#sheet').classList.remove('on') }
+$('#scrim').onclick = closeSheet;
+
+function sheetJoin(){
+  openSheet(`
+    <h3>Ajouter un partage</h3>
+    <p class="sub">Colle le lien <b>partage://…</b> reçu (ou créé pour toi dans Partage sur le Mac).</p>
+    <textarea class="field" id="inv" rows="3" placeholder="partage://rejoindre?d=…" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+    <div id="invPrev"></div>
+    <div class="stack">
+      <button class="ghost" id="paste">Coller depuis le presse-papiers</button>
+      <button class="primary wide" id="join" disabled>Ajouter</button>
+    </div>`);
+  const f = $('#inv');
+  const check = () => {
+    const p = decodeInvite(f.value);
+    f.classList.toggle('ok', !!p); f.classList.remove('bad');
+    $('#join').disabled = !p;
+    $('#invPrev').innerHTML = p ? `<div class="preview">${folderGlyph('#33c773', true)}<div><b>${esc(p.n)}</b><div style="font-size:13px;color:var(--sub)">Partagé par ${esc(p.o)}</div></div></div>` : '';
+  };
+  f.oninput = check;
+  $('#paste').onclick = async () => {
+    try{ f.value = (await navigator.clipboard.readText()).trim(); check() }
+    catch(e){ toast('Appuie longuement dans le champ, puis « Coller »'); f.focus() }
+  };
+  $('#join').onclick = () => {
+    const p = decodeInvite(f.value);
+    if(!p){ f.classList.add('bad'); return }
+    let s = shareByKey(p.k);
+    if(!s){ s = {t:p.t, k:p.k, u:p.u, n:p.n, o:p.o}; shares.push(s); saveShares() }
+    closeSheet(); haptic(); toast('Partage ajouté'); openShare(s);
+  };
+}
+
+function sheetFile(e){
+  const name = baseName(e.p); const {kind} = kindOf(name);
+  const role = cur.hello && cur.hello.role;
+  const openLabel = kind==='audio' ? 'Écouter' : kind==='video' ? 'Regarder' : kind==='image' ? 'Voir' : null;
+  openSheet(`
+    <h3>${esc(name)}</h3>
+    <div class="fname">${fmtSize(e.s)}</div>
+    <div class="actions">
+      ${openLabel ? `<button class="act" data-a="open">${I.open}${openLabel}</button>` : ''}
+      <button class="act" data-a="save">${I.save}Enregistrer / partager</button>
+      ${canDelete(role) ? `<button class="act danger" data-a="del">${I.trash}Supprimer</button>` : ''}
+    </div>`);
+  $('#sheetBody').querySelectorAll('.act').forEach(b => b.onclick = () => {
+    const a = b.dataset.a; closeSheet();
+    if(a==='open') openEntry(e);
+    if(a==='save') saveEntry(e);
+    if(a==='del') confirmDelete(e);
+  });
+}
+
+function confirmDelete(e){
+  openSheet(`
+    <h3>Supprimer « ${esc(baseName(e.p))} » ?</h3>
+    <p class="sub">Il sera aussi retiré chez toutes les personnes qui ont accès. L'hôte le retrouve dans sa corbeille.</p>
+    <div class="actions">
+      <button class="act danger" id="yes">${I.trash}Supprimer</button>
+      <button class="act" id="no">Annuler</button>
+    </div>`);
+  $('#no').onclick = closeSheet;
+  $('#yes').onclick = async () => {
+    closeSheet();
+    try{ await call(cur.share, '/api/file', {method:'DELETE', query:{p:e.p}}); toast('Supprimé'); await refresh() }
+    catch(err){ toast(errText(err, cur.share)) }
+  };
+}
+
+function sheetAdd(){
+  const share = cur.share;
+  openSheet(`
+    <h3>Ajouter</h3>
+    <p class="sub">${cur.dir ? 'Dans « '+esc(baseName(cur.dir))+' »' : 'Dans « '+esc(share.n)+' »'}</p>
+    <div class="actions">
+      <button class="act" id="up">${I.upload}Envoyer des fichiers</button>
+      <button class="act" id="nf">${I.newfolder}Nouveau dossier</button>
+    </div>`);
+  $('#up').onclick = () => { closeSheet(); $('#picker').value=''; $('#picker').click() };
+  $('#nf').onclick = sheetNewFolder;
+}
+
+function sheetShare(){
+  const share = cur.share;
+  openSheet(`
+    <h3>${esc(share.n)}</h3>
+    <div class="fname">Partagé par ${esc(share.o)}</div>
+    <div class="actions">
+      <button class="act danger" id="rm">${I.remove}Retirer ce partage de l'iPhone</button>
+      <button class="act" id="no">Annuler</button>
+    </div>
+    <p class="sub" style="margin-top:14px">Ça ne supprime rien sur le Mac : tu pourras le rajouter avec le même lien.</p>`);
+  $('#no').onclick = closeSheet;
+  $('#rm').onclick = () => {
+    shares = shares.filter(s=>s!==share); saveShares(); closeSheet();
+    $('#pClose').click(); toast('Retiré de cet iPhone'); viewHome(true);
+  };
+}
+
+function sheetNewFolder(){
+  openSheet(`
+    <h3>Nouveau dossier</h3>
+    <input class="field" id="fname" placeholder="Nom du dossier" autocomplete="off">
+    <div class="stack"><button class="primary wide" id="mk">Créer</button></div>`);
+  setTimeout(()=>$('#fname').focus(), 350);
+  $('#mk').onclick = async () => {
+    const n = $('#fname').value.trim().replace(/[\/:]/g,'-').replace(/^\.+/,'');
+    if(!n){ $('#fname').classList.add('bad'); return }
+    closeSheet();
+    const p = uniquePath(cur.dir ? cur.dir+'/'+n : n);
+    try{ await call(cur.share, '/api/mkdir', {method:'POST', query:{p}}); toast('Dossier créé'); await refresh() }
+    catch(err){ toast(errText(err, cur.share)) }
+  };
+}
+
+/* ───────── Envoi de fichiers (morceaux de 8 Mo, comme sur Mac) ───────── */
+function uniquePath(p){
+  const taken = new Set(cur.entries.map(e=>e.p));
+  if(!taken.has(p)) return p;
+  const slash = p.lastIndexOf('/'); const dir = slash>=0 ? p.slice(0,slash+1) : ''; const name = p.slice(slash+1);
+  const dot = name.lastIndexOf('.'); const stem = dot>0 ? name.slice(0,dot) : name; const ext = dot>0 ? name.slice(dot) : '';
+  for(let i=2;;i++){ const c = dir+stem+' '+i+ext; if(!taken.has(c)) return c }
+}
+$('#picker').onchange = async ev => {
+  const files = Array.from(ev.target.files||[]); if(!files.length || !cur) return;
+  const share = cur.share, dir = cur.dir;
+  let ok = 0;
+  for(const f of files){
+    const path = uniquePath(dir ? dir+'/'+f.name : f.name);
+    cur.entries.push({p:path, s:f.size, m:0, d:false}); // réserve le nom
+    const t = transfer('Envoi de ' + f.name);
+    try{
+      await uploadFile(share, f, path, p=>t.set(p)); ok++;
+    }catch(err){ toast(errText(err, share)) }
+    finally{ t.done() }
+  }
+  if(ok) toast(ok>1 ? ok+' fichiers envoyés' : 'Fichier envoyé');
+  await refresh();
+};
+async function uploadFile(share, f, path, onProgress){
+  const CHUNK = 8 << 20;
+  const up = Array.from(crypto.getRandomValues(new Uint8Array(8)), b=>b.toString(16).padStart(2,'0')).join('');
+  const m = String(f.lastModified || Date.now());
+  let off = 0;
+  do{
+    const piece = await f.slice(off, off+CHUNK).arrayBuffer();
+    await call(share, '/api/file', {method:'PUT', query:{p:path, m, off:String(off), total:String(f.size), up}, body:piece});
+    off += piece.byteLength; onProgress(f.size ? off/f.size : 1);
+    if(!piece.byteLength) break;
+  }while(off < f.size);
+}
+
+/* ───────── Démarrage ───────── */
+(function boot(){
+  // lien ouvert directement : …/partage/#d=… ou ?d=…
+  const fromURL = (location.hash.includes('d=') ? location.hash : location.search.includes('d=') ? location.search : '');
+  if(fromURL){
+    const p = decodeInvite(fromURL);
+    history.replaceState(null, '', location.pathname);
+    if(p){
+      let s = shareByKey(p.k);
+      if(!s){ s = {t:p.t, k:p.k, u:p.u, n:p.n, o:p.o}; shares.push(s); saveShares() }
+      openShare(s); return;
+    }
+  }
+  if(shares.length === 1) openShare(shares[0]); else viewHome();
+})();
+// actualise quand on revient sur l'app et toutes les 20 s
+document.addEventListener('visibilitychange', () => { if(!document.hidden) refresh() });
+setInterval(() => { if(!document.hidden) refresh() }, 20000);
+</script>
+</body>
+</html>
